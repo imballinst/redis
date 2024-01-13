@@ -1,7 +1,13 @@
 {
   "name": "redis",
+  "type": "module",
   "packageManager": "yarn@3.6.4",
+  "scripts": {
+    "start": "tsx index.ts"
+  },
   "devDependencies": {
-    "redis": "^4.6.12"
+    "redis": "^4.6.12",
+    "tsx": "4.7.0",
+    "typescript": "5.3.3"
   }
 }
