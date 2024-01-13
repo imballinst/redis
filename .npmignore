@@ -1,0 +1,8 @@
+.yarn/
+src/
+
+.gitattributes
+.yarnrc.yml
+docker-compose.yml
+tsconfig.json
+yarn.lock

@@ -1,13 +1,27 @@
 {
-  "name": "redis",
+  "name": "@imballinstack/xredis",
   "type": "module",
   "packageManager": "yarn@3.6.4",
+  "exports": {
+    "import": {
+      "default": "./dist/index.js",
+      "types": "./dist/index.d.cts"
+    },
+    "require": {
+      "default": "./dist/index.cjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
   "scripts": {
-    "start": "tsx index.ts"
+    "test": "vitest tests",
+    "build": "tsup src/index.ts --format esm,cjs --dts"
   },
   "devDependencies": {
-    "redis": "^4.6.12",
+    "prettier": "3.2.1",
+    "redis": "4.6.12",
+    "tsup": "8.0.1",
     "tsx": "4.7.0",
-    "typescript": "5.3.3"
+    "typescript": "5.3.3",
+    "vitest": "1.2.0"
   }
 }
