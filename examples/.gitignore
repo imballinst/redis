@@ -6,5 +6,6 @@
 !.yarn/versions
 
 node_modules
+scripts
 
 .npmrc
