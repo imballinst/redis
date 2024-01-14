@@ -30,4 +30,5 @@ jobs:
           docker-compose up -d
           yarn
           yarn test
+          yarn test:run
           docker-compose down

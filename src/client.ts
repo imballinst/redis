@@ -72,7 +72,7 @@ export class RedisClient<
 
   teardown() {
     this.promisesRecord = {};
-    return this.client.disconnect();
+    return this.client.quit();
   }
 
   async fetch({

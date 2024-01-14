@@ -1,4 +1,4 @@
-import { RedisClient } from '@imballinstack/redis';
+import { RedisClient } from './client';
 
 function testFetch<T extends unknown>(val: T): Promise<T> {
   return new Promise((res) => {
