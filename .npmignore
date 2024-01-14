@@ -1,9 +1,12 @@
+.changeset/
+.github/
 .devcontainer/
 .yarn/
 src/
 
 .gitattributes
 .yarnrc.yml
+.prettierrc.json
 docker-compose.yml
 tsconfig.json
 yarn.lock
