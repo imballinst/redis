@@ -9,5 +9,6 @@ src/
 .yarnrc.yml
 .prettierrc.json
 docker-compose.yml
+LICENSE
 tsconfig.json
 yarn.lock
