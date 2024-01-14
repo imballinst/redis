@@ -136,7 +136,7 @@ test('bulk fetches with cache', async () => {
   });
 
   results = await Promise.all([val1, val2, val3]);
-  expect(results).toStrictEqual(['123', '123', '123']);
+  expect(results).toStrictEqual([123, 123, 123]);
 
   expect(existingPromiseFn).toBeCalledTimes(2);
   expect(cacheHitFn).toBeCalledTimes(3);
@@ -181,6 +181,70 @@ test('bulk fetches with cache and cache processor', async () => {
 
   results = await Promise.all([val1, val2, val3]);
   expect(results).toStrictEqual([123, 123, 123]);
+});
+
+test('retrieve cache with default dynamic keys', async () => {
+  // We also want to check if the cache hit on dynamic keys, so, yeah.
+  const cacheHitFn = vi.fn();
+  const existingPromiseFn = vi.fn();
+
+  redisClient.setEvents({
+    onCacheHit: (key, value) => cacheHitFn(key, value),
+    onExistingPromiseHit: (key, value) => existingPromiseFn(key, value)
+  });
+
+  redisClient.setProcessors({
+    cacheKeyProcessor: {
+      user: (userId) => userId
+    }
+  });
+
+  let user1 = redisClient.fetch({
+    key: 'user',
+    params: ['hello']
+  });
+  let user2 = redisClient.fetch({
+    key: 'user',
+    params: ['world']
+  });
+  let user3 = redisClient.fetch({
+    key: 'user',
+    params: ['world']
+  });
+
+  let results = await Promise.all([user1, user2, user3]);
+  expect(results).toStrictEqual([
+    { id: 'hello', name: 'Name for hello' },
+    { id: 'world', name: 'Name for world' },
+    { id: 'world', name: 'Name for world' }
+  ]);
+
+  expect(existingPromiseFn).toBeCalledTimes(1);
+  expect(cacheHitFn).toBeCalledTimes(0);
+
+  // Round 2.  Test the cache value processor.
+  user1 = redisClient.fetch({
+    key: 'user',
+    params: ['hello']
+  });
+  user2 = redisClient.fetch({
+    key: 'user',
+    params: ['world']
+  });
+  user3 = redisClient.fetch({
+    key: 'user',
+    params: ['world']
+  });
+
+  results = await Promise.all([user1, user2, user3]);
+  expect(results).toStrictEqual([
+    { id: 'hello', name: 'Name for hello' },
+    { id: 'world', name: 'Name for world' },
+    { id: 'world', name: 'Name for world' }
+  ]);
+
+  expect(existingPromiseFn).toBeCalledTimes(1);
+  expect(cacheHitFn).toBeCalledTimes(3);
 });
 
 test('retrieve cache with dynamic keys', async () => {

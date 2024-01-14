@@ -31,10 +31,6 @@ const redisClient = new RedisClient({
     // For example: if we do `fetchUser("1")` then the resulting key will be `user:1`.
     cacheKeyProcessor: {
       user: (userId) => userId
-    },
-    // For example: if the response of `fetchUser("1")` is "{}" then it will be parsed to {}.
-    cacheValueProcessor: {
-      user: (value) => JSON.parse(value)
     }
   },
   redisClientOptions: {

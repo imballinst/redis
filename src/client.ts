@@ -35,7 +35,7 @@ export class RedisClient<
   private fetchersRecord: FetcherRecord;
   private promisesRecord: Partial<Record<string, any>>;
   protected client: RedisClientType<M, F, S>;
-  protected cacheValueProcessor?: CacheValueProcessor<FetcherRecord>;
+  protected cacheValueProcessor: CacheValueProcessor<FetcherRecord>;
   protected cacheKeyProcessor?: CacheKeyProcessor<FetcherRecord>;
   protected events?: Events<FetcherRecord>;
 
@@ -56,7 +56,7 @@ export class RedisClient<
     this.fetchersRecord = fetchersRecord;
     this.promisesRecord = {};
     this.client = createClient<M, F, S>(redisClientOptions);
-    this.cacheValueProcessor = processors?.cacheValueProcessor;
+    this.cacheValueProcessor = processors?.cacheValueProcessor ?? {};
     this.cacheKeyProcessor = processors?.cacheKeyProcessor;
     this.events = events;
   }
@@ -116,6 +116,15 @@ export class RedisClient<
           typeof res !== 'string' ? JSON.stringify(res) : res,
           setOptions
         );
+
+        if (!this.cacheValueProcessor[key]) {
+          // Set the defaults.
+          this.cacheValueProcessor[key] = createDefaultCacheValueProcessor(
+            key,
+            res
+          );
+        }
+
         return res;
       })
       .catch((err: unknown) => {
@@ -167,8 +176,36 @@ export class RedisClientTest<
 
   cleanupTestDependencies() {
     this.events = undefined;
-    this.cacheValueProcessor = undefined;
+    this.cacheValueProcessor = {};
     this.cacheKeyProcessor = undefined;
     return this.cleanup();
+  }
+}
+
+// Helper functions.
+function createDefaultCacheValueProcessor(
+  key: string | number | symbol,
+  value: unknown
+) {
+  const type = typeof value;
+
+  switch (type) {
+    case 'number': {
+      return (val: unknown) => Number(val);
+    }
+    case 'string': {
+      return (val: unknown) => String(val);
+    }
+    case 'undefined':
+    case 'object': {
+      if (value === 'null') return () => null;
+      if (value === 'undefined') return () => undefined;
+      return (val: string) => JSON.parse(val);
+    }
+    default: {
+      throw new Error(
+        `Cannot handle value of type ${type}. Please pass a custom cacheValueProcessor for key \`${String(key)}\`.`
+      );
+    }
   }
 }
