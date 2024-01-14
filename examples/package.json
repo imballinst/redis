@@ -2,8 +2,11 @@
   "name": "examples",
   "type": "module",
   "packageManager": "yarn@3.6.4",
+  "scripts": {
+    "start": "tsx index.ts"
+  },
   "dependencies": {
-    "@imballinstack/redis": "0.0.1",
+    "@imballinstack/redis": "0.0.2",
     "redis": "4.6.12"
   },
   "devDependencies": {

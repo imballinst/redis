@@ -166,12 +166,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@imballinstack/redis@npm:0.0.1":
-  version: 0.0.1
-  resolution: "@imballinstack/redis@npm:0.0.1"
+"@imballinstack/redis@npm:0.0.2":
+  version: 0.0.2
+  resolution: "@imballinstack/redis@npm:0.0.2"
   peerDependencies:
     redis: ^4.6.12
-  checksum: ded4828dffc85f64b1cefe4a220e3c4efd6cdd7d90a2e989c06bd2c8d2be15e5d3246fa0b76a3bbe2b8bc089d48080c80f44192163e5067fd9ae19ae2da76693
+  checksum: f44062e18c02717d2c842e2a107e5323d7c5dd7051b3c3eaa1b4545a8a74a12cf4a5e47c3b8cabdee80693d08b42f43099003cf501971ed0d1e69b2a02ffe15b
   languageName: node
   linkType: hard
 
@@ -554,7 +554,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "examples@workspace:."
   dependencies:
-    "@imballinstack/redis": 0.0.1
+    "@imballinstack/redis": 0.0.2
     redis: 4.6.12
     tsx: 4.7.0
     typescript: 5.3.3
