@@ -42,21 +42,22 @@ export class RedisClient<
   constructor({
     fetchersRecord,
     redisClientOptions,
-    cacheValueProcessor,
-    cacheKeyProcessor,
+    processors,
     events
   }: {
     fetchersRecord: FetcherRecord;
     redisClientOptions?: RedisClientOptions<M, F, S>;
-    cacheValueProcessor?: CacheValueProcessor<FetcherRecord>;
-    cacheKeyProcessor?: CacheKeyProcessor<FetcherRecord>;
+    processors?: {
+      cacheValueProcessor?: CacheValueProcessor<FetcherRecord>;
+      cacheKeyProcessor?: CacheKeyProcessor<FetcherRecord>;
+    };
     events?: Events<FetcherRecord>;
   }) {
     this.fetchersRecord = fetchersRecord;
     this.promisesRecord = {};
     this.client = createClient<M, F, S>(redisClientOptions);
-    this.cacheValueProcessor = cacheValueProcessor;
-    this.cacheKeyProcessor = cacheKeyProcessor;
+    this.cacheValueProcessor = processors?.cacheValueProcessor;
+    this.cacheKeyProcessor = processors?.cacheKeyProcessor;
     this.events = events;
   }
 
@@ -144,10 +145,20 @@ export class RedisClientTest<
     this.events = events;
   }
 
-  setCacheValueProcessor(
-    cacheValueProcessor: CacheValueProcessor<FetcherRecord>
-  ) {
-    this.cacheValueProcessor = cacheValueProcessor;
+  setProcessors({
+    cacheKeyProcessor,
+    cacheValueProcessor
+  }: {
+    cacheKeyProcessor?: CacheKeyProcessor<FetcherRecord>;
+    cacheValueProcessor?: CacheValueProcessor<FetcherRecord>;
+  }) {
+    if (cacheKeyProcessor) {
+      this.cacheKeyProcessor = cacheKeyProcessor;
+    }
+
+    if (cacheValueProcessor) {
+      this.cacheValueProcessor = cacheValueProcessor;
+    }
   }
 
   getCurrentlyCachedKeys() {

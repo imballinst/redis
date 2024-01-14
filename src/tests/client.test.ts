@@ -27,9 +27,6 @@ beforeAll(async () => {
       user: (userId: string) =>
         testFetch({ id: userId, name: `Name for ${userId}` })
     },
-    cacheKeyProcessor: {
-      user: (userId) => userId
-    },
     redisClientOptions: {
       socket: {
         host: '127.0.0.1'
@@ -146,8 +143,10 @@ test('bulk fetches with cache', async () => {
 });
 
 test('bulk fetches with cache and cache processor', async () => {
-  redisClient.setCacheValueProcessor({
-    hello: (value) => Number(value)
+  redisClient.setProcessors({
+    cacheValueProcessor: {
+      hello: (value) => Number(value)
+    }
   });
 
   let val1 = redisClient.fetch({
@@ -194,8 +193,13 @@ test('retrieve cache with dynamic keys', async () => {
     onExistingPromiseHit: (key, value) => existingPromiseFn(key, value)
   });
 
-  redisClient.setCacheValueProcessor({
-    user: (value) => JSON.parse(value)
+  redisClient.setProcessors({
+    cacheValueProcessor: {
+      user: (value) => JSON.parse(value)
+    },
+    cacheKeyProcessor: {
+      user: (userId) => userId
+    }
   });
 
   let user1 = redisClient.fetch({
