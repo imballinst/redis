@@ -1,5 +1,11 @@
 # @imballinstack/redis
 
+## 0.0.4
+
+### Patch Changes
+
+- c5260ef: docs: update README.md with regards to stuff
+
 ## 0.0.3
 
 ### Patch Changes
