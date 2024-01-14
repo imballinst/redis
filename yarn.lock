@@ -438,6 +438,23 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@imballinstack/redis@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "@imballinstack/redis@workspace:."
+  dependencies:
+    "@changesets/cli": 2.27.1
+    "@types/node": 20.11.0
+    prettier: 3.2.1
+    redis: 4.6.12
+    tsup: 8.0.1
+    tsx: 4.7.0
+    typescript: 5.3.3
+    vitest: 1.2.0
+  peerDependencies:
+    redis: ^4.6.12
+  languageName: unknown
+  linkType: soft
+
 "@isaacs/cliui@npm:^8.0.2":
   version: 8.0.2
   resolution: "@isaacs/cliui@npm:8.0.2"
@@ -750,6 +767,15 @@ __metadata:
   version: 1.2.5
   resolution: "@types/minimist@npm:1.2.5"
   checksum: 477047b606005058ab0263c4f58097136268007f320003c348794f74adedc3166ffc47c80ec3e94687787f2ab7f4e72c468223946e79892cf0fd9e25e9970a90
+  languageName: node
+  linkType: hard
+
+"@types/node@npm:20.11.0":
+  version: 20.11.0
+  resolution: "@types/node@npm:20.11.0"
+  dependencies:
+    undici-types: ~5.26.4
+  checksum: 1bd6890db7e0404d11c33d28f46f19f73256f0ba35d19f0ef2a0faba09f366f188915fb9338eebebcc472075c1c4941e17c7002786aa69afa44980737846b200
   languageName: node
   linkType: hard
 
@@ -4351,6 +4377,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"undici-types@npm:~5.26.4":
+  version: 5.26.5
+  resolution: "undici-types@npm:5.26.5"
+  checksum: 3192ef6f3fd5df652f2dc1cd782b49d6ff14dc98e5dced492aa8a8c65425227da5da6aafe22523c67f035a272c599bb89cfe803c1db6311e44bed3042fc25487
+  languageName: node
+  linkType: hard
+
 "unique-filename@npm:^3.0.0":
   version: 3.0.0
   resolution: "unique-filename@npm:3.0.0"
@@ -4639,22 +4672,6 @@ __metadata:
   checksum: 371733296dc2d616900ce15a0049dca0ef67597d6394c57347ba334393599e800bab03c41d4d45221b6bc967b8c453ec3ae4749eff3894202d16800fdfe0e238
   languageName: node
   linkType: hard
-
-"xredis@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "xredis@workspace:."
-  dependencies:
-    "@changesets/cli": 2.27.1
-    prettier: 3.2.1
-    redis: 4.6.12
-    tsup: 8.0.1
-    tsx: 4.7.0
-    typescript: 5.3.3
-    vitest: 1.2.0
-  peerDependencies:
-    redis: ^4.6.12
-  languageName: unknown
-  linkType: soft
 
 "y18n@npm:^4.0.0":
   version: 4.0.3

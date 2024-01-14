@@ -5,7 +5,6 @@
 !.yarn/sdks
 !.yarn/versions
 
-dist/
 node_modules
 
 .npmrc
