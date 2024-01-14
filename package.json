@@ -1,5 +1,5 @@
 {
-  "name": "@imballinstack/xredis",
+  "name": "xredis",
   "type": "module",
   "packageManager": "yarn@3.6.4",
   "exports": {
@@ -15,6 +15,9 @@
   "scripts": {
     "test": "vitest tests",
     "build": "tsup src/index.ts --format esm,cjs --dts"
+  },
+  "peerDependencies": {
+    "redis": "^4.6.12"
   },
   "devDependencies": {
     "prettier": "3.2.1",
