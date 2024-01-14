@@ -33,7 +33,7 @@ export class RedisClient<
   S extends RedisScripts
 > {
   private fetchersRecord: FetcherRecord;
-  private promisesRecord: Partial<Record<keyof FetcherRecord, any>>;
+  private promisesRecord: Partial<Record<string, any>>;
   protected client: RedisClientType<M, F, S>;
   protected cacheValueProcessor?: CacheValueProcessor<FetcherRecord>;
   protected cacheKeyProcessor?: CacheKeyProcessor<FetcherRecord>;
@@ -84,18 +84,18 @@ export class RedisClient<
     setOptions?: SetOptions;
   }): Promise<UnwrapPromise<ReturnType<FetcherRecord[typeof key]>>> {
     const keyProcessor = this.cacheKeyProcessor?.[key];
-    const effectiveKey = keyProcessor
-      ? `${String(key)}:${keyProcessor(...params)}`
-      : key;
+    const effectiveKey = (
+      keyProcessor ? `${String(key)}:${keyProcessor(...params)}` : key
+    ) as string;
+
     const cached = await this.client.get(effectiveKey);
-    console.info(keyProcessor, effectiveKey, cached);
     if (cached) {
       if (this.events?.onCacheHit) {
         this.events?.onCacheHit(effectiveKey, cached);
       }
 
       const valueProcessor = this.cacheValueProcessor?.[key];
-      return valueProcessor ? valueProcessor(cached) : cached;
+      return valueProcessor ? valueProcessor(cached) : (cached as any);
     }
 
     const existingPromise = this.promisesRecord[effectiveKey];
@@ -151,7 +151,7 @@ export class RedisClientTest<
   }
 
   getCurrentlyCachedKeys() {
-    return this.client.keys({});
+    return this.client.keys('*');
   }
 
   cleanupTestDependencies() {

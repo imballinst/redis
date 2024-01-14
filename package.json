@@ -6,15 +6,16 @@
     "access": "public"
   },
   "packageManager": "yarn@3.6.4",
+  "types": "./dist/index.d.ts",
   "exports": {
-    "." :{
+    ".": {
       "import": "./dist/index.js",
-        "default": "./dist/index.cjs"
+      "default": "./dist/index.cjs"
     }
   },
   "scripts": {
     "test": "vitest tests",
-    "build": "tsup src/index.ts --format esm,cjs --dts",
+    "build": "rimraf dist && tsup src/index.ts --format esm,cjs && tsup src/index.ts --dts-only --format esm",
     "release": "node scripts/release.mjs"
   },
   "peerDependencies": {
@@ -25,6 +26,7 @@
     "@types/node": "20.11.0",
     "prettier": "3.2.1",
     "redis": "4.6.12",
+    "rimraf": "5.0.5",
     "tsup": "8.0.1",
     "tsx": "4.7.0",
     "typescript": "5.3.3",
