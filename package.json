@@ -1,5 +1,5 @@
 {
-  "name": "xredis",
+  "name": "@imballinstack/redis",
   "type": "module",
   "packageManager": "yarn@3.6.4",
   "exports": {
@@ -20,6 +20,7 @@
     "redis": "^4.6.12"
   },
   "devDependencies": {
+    "@changesets/cli": "2.27.1",
     "prettier": "3.2.1",
     "redis": "4.6.12",
     "tsup": "8.0.1",
