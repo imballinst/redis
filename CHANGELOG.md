@@ -1,5 +1,11 @@
 # @imballinstack/redis
 
+## 0.1.0
+
+### Minor Changes
+
+- 01b471d: feat: allow default redis value processor when no processor for that key is set
+
 ## 0.0.4
 
 ### Patch Changes
