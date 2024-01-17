@@ -1,5 +1,11 @@
 # @imballinstack/redis
 
+## 0.1.2
+
+### Patch Changes
+
+- 98b15cb: chore: fix docs using an old command
+
 ## 0.1.1
 
 ### Patch Changes
