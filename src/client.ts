@@ -61,7 +61,7 @@ export class RedisClient<
     this.events = events;
   }
 
-  initialize(): Promise<RedisClientType<M, F, S>> {
+  connect(): Promise<RedisClientType<M, F, S>> {
     return this.client.connect();
   }
 

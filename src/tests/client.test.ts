@@ -33,7 +33,7 @@ beforeAll(async () => {
       }
     }
   });
-  await redisClient.initialize();
+  await redisClient.connect();
   await redisClient.cleanup();
 });
 

@@ -7,6 +7,7 @@
   },
   "packageManager": "yarn@3.6.4",
   "types": "./dist/index.d.ts",
+  "repository": "https://github.com/imballinst/redis",
   "exports": {
     ".": {
       "import": "./dist/index.js",

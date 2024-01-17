@@ -21,7 +21,7 @@ yarn add redis @imballinstack/redis
 The functions stored in `fetchersRecord` will be pivotal when you call `redisClient.fetch`. Depending on the `key`, the `params` will follow the function mapped to the fetcher in `fetchersRecord` with that matching key.
 
 ```ts
-import { RedisClient } from './client';
+import { RedisClient } from '@imballinstack/redis';
 
 const redisClient = new RedisClient({
   fetchersRecord: {
