@@ -1,5 +1,11 @@
 # @imballinstack/redis
 
+## 0.1.1
+
+### Patch Changes
+
+- 0d8a0f0: docs: update docs
+
 ## 0.1.0
 
 ### Minor Changes
