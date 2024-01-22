@@ -6,14 +6,14 @@ This package is a Redis client package (based on [node-redis](https://github.com
 
 To install, do either of the commands below (depending on your package manager). It is worth noting that `redis` here is a peer dependency, so you need to install it yourselves.
 
-Currently this package is compatible with `node-redis` version 4.
+Currently this package is compatible with `redis` v4.
 
 ```shell
 # With npm.
-npm i redis @imballinstack/redis
+npm i redis @imballinstack/redis redis
 
 # With yarn.
-yarn add redis @imballinstack/redis
+yarn add redis @imballinstack/redis redis
 ```
 
 ## Usage
@@ -57,12 +57,24 @@ user1 = await redisClient.fetch({
 const users = await Promise.all([
   redisClient.fetch({
     key: 'user',
-    params: ['2']
+    params: ['1']
   }),
   redisClient.fetch({
     key: 'user',
     params: ['2']
   })
+]);
+
+// Or, fetch them together. This will result in 1 roundtrip to Redis + N fetches to the domain service, where N is number of cache miss.
+const users2 = await redisClient.fetchMultiple([
+  {
+    key: 'user',
+    params: ['1']
+  },
+  {
+    key: 'user',
+    params: ['2']
+  }
 ]);
 ```
 
