@@ -1,5 +1,11 @@
 # @imballinstack/redis
 
+## 0.2.0
+
+### Minor Changes
+
+- cd004d1: feat: implement fetchMultiple to fetch multiple keys
+
 ## 0.1.2
 
 ### Patch Changes
