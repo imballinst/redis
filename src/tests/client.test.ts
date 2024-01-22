@@ -165,7 +165,7 @@ test('bulk fetches with cache and cache processor', async () => {
   let results = await Promise.all([val1, val2, val3]);
   expect(results).toStrictEqual([123, 123, 123]);
 
-  // Round 2.  Test the cache value processor.
+  // Round 2. Test the cache value processor.
   val1 = redisClient.fetch({
     key: 'hello',
     params: [123]
@@ -222,7 +222,7 @@ test('retrieve cache with default dynamic keys', async () => {
   expect(existingPromiseFn).toBeCalledTimes(1);
   expect(cacheHitFn).toBeCalledTimes(0);
 
-  // Round 2.  Test the cache value processor.
+  // Round 2. Test the cache value processor.
   user1 = redisClient.fetch({
     key: 'user',
     params: ['hello']
@@ -289,7 +289,7 @@ test('retrieve cache with dynamic keys', async () => {
   expect(existingPromiseFn).toBeCalledTimes(1);
   expect(cacheHitFn).toBeCalledTimes(0);
 
-  // Round 2.  Test the cache value processor.
+  // Round 2. Test the cache value processor.
   user1 = redisClient.fetch({
     key: 'user',
     params: ['hello']
@@ -312,4 +312,98 @@ test('retrieve cache with dynamic keys', async () => {
 
   expect(existingPromiseFn).toBeCalledTimes(1);
   expect(cacheHitFn).toBeCalledTimes(3);
+});
+
+test('retrieve cache with dynamic keys: with mget', async () => {
+  // We also want to check if the cache hit on dynamic keys, so, yeah.
+  const cacheHitFn = vi.fn();
+  const existingPromiseFn = vi.fn();
+
+  redisClient.setEvents({
+    onCacheHit: (key, value) => cacheHitFn(key, value),
+    onExistingPromiseHit: (key, value) => existingPromiseFn(key, value)
+  });
+
+  redisClient.setProcessors({
+    cacheValueProcessor: {
+      user: (value) => JSON.parse(value)
+    },
+    cacheKeyProcessor: {
+      user: (userId) => userId
+    }
+  });
+
+  let user1 = redisClient.fetch({
+    key: 'user',
+    params: ['hello']
+  });
+  let user2 = redisClient.fetch({
+    key: 'user',
+    params: ['world']
+  });
+  let user3 = redisClient.fetch({
+    key: 'user',
+    params: ['world']
+  });
+
+  let results = await Promise.all([user1, user2, user3]);
+  expect(results).toStrictEqual([
+    { id: 'hello', name: 'Name for hello' },
+    { id: 'world', name: 'Name for world' },
+    { id: 'world', name: 'Name for world' }
+  ]);
+
+  expect(existingPromiseFn).toBeCalledTimes(1);
+  expect(cacheHitFn).toBeCalledTimes(0);
+
+  // Round 2. Test the cache value processor.
+  user1 = redisClient.fetch({
+    key: 'user',
+    params: ['hello']
+  });
+  user2 = redisClient.fetch({
+    key: 'user',
+    params: ['world']
+  });
+  user3 = redisClient.fetch({
+    key: 'user',
+    params: ['world']
+  });
+
+  results = await Promise.all([user1, user2, user3]);
+  expect(results).toStrictEqual([
+    { id: 'hello', name: 'Name for hello' },
+    { id: 'world', name: 'Name for world' },
+    { id: 'world', name: 'Name for world' }
+  ]);
+
+  expect(existingPromiseFn).toBeCalledTimes(1);
+  expect(cacheHitFn).toBeCalledTimes(3);
+
+  // Round 3, same thing, but with mget.
+  // Fetch multiple.
+  let results2 = await redisClient.fetchMultiple({
+    keyParamsArray: [
+      {
+        key: 'user',
+        params: ['hello']
+      },
+      {
+        key: 'user',
+        params: ['world']
+      },
+      {
+        key: 'user',
+        params: ['world']
+      }
+    ]
+  });
+  expect(results2).toStrictEqual([
+    { id: 'hello', name: 'Name for hello' },
+    { id: 'world', name: 'Name for world' },
+    { id: 'world', name: 'Name for world' }
+  ]);
+
+  expect(existingPromiseFn).toBeCalledTimes(1);
+  expect(cacheHitFn).toBeCalledTimes(6);
 });

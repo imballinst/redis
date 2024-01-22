@@ -38,4 +38,23 @@ let user3 = redisClient.fetch({
 let results = await Promise.all([user1, user2, user3]);
 console.info(results);
 
+// Fetch multiple.
+let results2 = await redisClient.fetchMultiple({
+  keyParamsArray: [
+    {
+      key: 'user',
+      params: ['world']
+    },
+    {
+      key: 'user',
+      params: ['world']
+    },
+    {
+      key: 'user',
+      params: ['world']
+    }
+  ]
+});
+console.info(results2);
+
 await redisClient.teardown();

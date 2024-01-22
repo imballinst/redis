@@ -25,6 +25,19 @@ type CacheKeyProcessor<FetcherRecord extends FetcherRecordExtends> = Partial<{
   [K in keyof FetcherRecord]: (...args: Parameters<FetcherRecord[K]>) => string;
 }>;
 
+interface KeyParams<
+  FetcherRecord extends FetcherRecordExtends,
+  K extends keyof FetcherRecord
+> {
+  key: K;
+  params: Parameters<FetcherRecord[K]>;
+}
+type KeyParamsReturnType<
+  KP extends Array<KeyParams<FetcherRecord, K>>,
+  FetcherRecord extends FetcherRecordExtends,
+  K extends keyof FetcherRecord
+> = Array<UnwrapPromise<ReturnType<FetcherRecord[KP[number]['key']]>>>;
+
 export class RedisClient<
   FetcherRecord extends FetcherRecordExtends,
   // These are types from Redis, we probably don't care about it.
@@ -34,10 +47,10 @@ export class RedisClient<
 > {
   private fetchersRecord: FetcherRecord;
   private promisesRecord: Partial<Record<string, any>>;
-  protected client: RedisClientType<M, F, S>;
   protected cacheValueProcessor: CacheValueProcessor<FetcherRecord>;
   protected cacheKeyProcessor?: CacheKeyProcessor<FetcherRecord>;
   protected events?: Events<FetcherRecord>;
+  instance: RedisClientType<M, F, S>;
 
   constructor({
     fetchersRecord,
@@ -55,41 +68,93 @@ export class RedisClient<
   }) {
     this.fetchersRecord = fetchersRecord;
     this.promisesRecord = {};
-    this.client = createClient<M, F, S>(redisClientOptions);
+    this.instance = createClient<M, F, S>(redisClientOptions);
     this.cacheValueProcessor = processors?.cacheValueProcessor ?? {};
     this.cacheKeyProcessor = processors?.cacheKeyProcessor;
     this.events = events;
   }
 
   connect(): Promise<RedisClientType<M, F, S>> {
-    return this.client.connect();
+    return this.instance.connect();
   }
 
   cleanup() {
     this.promisesRecord = {};
-    return this.client.flushDb();
+    return this.instance.flushDb();
   }
 
   teardown() {
     this.promisesRecord = {};
-    return this.client.quit();
+    return this.instance.quit();
   }
 
-  async fetch({
+  async fetch<K extends keyof FetcherRecord>({
     key,
     params,
     setOptions
-  }: {
-    key: keyof FetcherRecord;
-    params: Parameters<FetcherRecord[typeof key]>;
+  }: KeyParams<FetcherRecord, K> & {
     setOptions?: SetOptions;
   }): Promise<UnwrapPromise<ReturnType<FetcherRecord[typeof key]>>> {
-    const keyProcessor = this.cacheKeyProcessor?.[key];
-    const effectiveKey = (
-      keyProcessor ? `${String(key)}:${keyProcessor(...params)}` : key
-    ) as string;
+    const effectiveKey = this.getEffectiveKey(key, params);
 
-    const cached = await this.client.get(effectiveKey);
+    const cached = await this.instance.get(effectiveKey);
+    return this.internalCacheValueProcessor({
+      key,
+      params,
+      setOptions,
+      cached,
+      effectiveKey
+    });
+  }
+
+  async fetchMultiple<K extends keyof FetcherRecord>({
+    keyParamsArray,
+    setOptions
+  }: {
+    keyParamsArray: Array<KeyParams<FetcherRecord, K>>;
+    setOptions?: SetOptions;
+  }): Promise<KeyParamsReturnType<typeof keyParamsArray, FetcherRecord, K>> {
+    const keys = keyParamsArray.map((item) => item.key);
+    const effectiveKeys = keys.map((key, idx) =>
+      this.getEffectiveKey(key, keyParamsArray[idx].params)
+    );
+
+    const values = await this.instance.mGet(effectiveKeys);
+    const results = await Promise.all(
+      values.map((value, idx) =>
+        this.internalCacheValueProcessor({
+          cached: value,
+          effectiveKey: effectiveKeys[idx],
+          key: keys[idx],
+          params: keyParamsArray[idx].params,
+          setOptions
+        })
+      )
+    );
+
+    return results;
+  }
+
+  private getEffectiveKey(
+    key: keyof FetcherRecord,
+    fnParams: Parameters<FetcherRecord[typeof key]>
+  ) {
+    const keyProcessor = this.cacheKeyProcessor?.[key];
+    return (
+      keyProcessor ? `${String(key)}:${keyProcessor(...fnParams)}` : key
+    ) as string;
+  }
+
+  private internalCacheValueProcessor({
+    key,
+    params,
+    setOptions,
+    cached,
+    effectiveKey
+  }: Parameters<this['fetch']>[0] & {
+    cached: string | null;
+    effectiveKey: string;
+  }) {
     if (cached) {
       if (this.events?.onCacheHit) {
         this.events?.onCacheHit(effectiveKey, cached);
@@ -111,7 +176,7 @@ export class RedisClient<
     const promise = this.fetchersRecord[key](...params)
       .then((res: any) => {
         delete this.promisesRecord[effectiveKey];
-        this.client.set(
+        this.instance.set(
           effectiveKey,
           typeof res !== 'string' ? JSON.stringify(res) : res,
           setOptions
@@ -171,7 +236,7 @@ export class RedisClientTest<
   }
 
   getCurrentlyCachedKeys() {
-    return this.client.keys('*');
+    return this.instance.keys('*');
   }
 
   cleanupTestDependencies() {
