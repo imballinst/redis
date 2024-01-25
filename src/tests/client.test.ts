@@ -421,18 +421,20 @@ test('revalidate keys', async () => {
 
   // Revalidate.
   let validateResult = await redisClient.revalidate();
-  let [firstUser, secondUser] = validateResult;
-  console.info(firstUser, secondUser);
-  expect(firstUser.isValid).toBe(true);
-  expect(secondUser.isValid).toBe(false);
+  let firstUser = validateResult.find((item) => item.key === 'test:user:1');
+  let secondUser = validateResult.find((item) => item.key === 'test:user:2');
+
+  expect(firstUser?.isValid).toBe(true);
+  expect(secondUser?.isValid).toBe(false);
 
   // After that, we can clean up the thingies, or even maybe "fix" the invalid user.
   await redisClient.instance.set('test:user:2', '{ "isValidUser": true }');
 
   // Revalidate, again.
   validateResult = await redisClient.revalidate();
-  [firstUser, secondUser] = validateResult;
+  firstUser = validateResult.find((item) => item.key === 'test:user:1');
+  secondUser = validateResult.find((item) => item.key === 'test:user:2');
 
-  expect(firstUser.isValid).toBe(true);
-  expect(secondUser.isValid).toBe(true);
+  expect(firstUser?.isValid).toBe(true);
+  expect(secondUser?.isValid).toBe(true);
 });
