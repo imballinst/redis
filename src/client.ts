@@ -111,7 +111,8 @@ export class RedisClient<
     const results: Array<RevalidateType> = [];
 
     for (let i = 0; i < allKeys.length; i++) {
-      const effectiveKey = allKeys[i].slice(this.keyPrefix.length);
+      const key = allKeys[i];
+      const effectiveKey = key.slice(this.keyPrefix.length);
       const firstKeySegment = fetcherKeys.find((key) =>
         effectiveKey.startsWith(`${key}:`)
       );
@@ -119,7 +120,7 @@ export class RedisClient<
 
       const value = values[i];
       const result: RevalidateType = {
-        key: effectiveKey,
+        key,
         isValid: true,
         parsedValue: value
       };

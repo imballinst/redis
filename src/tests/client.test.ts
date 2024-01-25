@@ -421,6 +421,7 @@ test('revalidate keys', async () => {
 
   // Revalidate.
   let validateResult = await redisClient.revalidate();
+  console.info(validateResult);
   let firstUser = validateResult.find((item) => item.key === 'test:user:1');
   let secondUser = validateResult.find((item) => item.key === 'test:user:2');
 
@@ -432,6 +433,7 @@ test('revalidate keys', async () => {
 
   // Revalidate, again.
   validateResult = await redisClient.revalidate();
+  console.info(validateResult);
   firstUser = validateResult.find((item) => item.key === 'test:user:1');
   secondUser = validateResult.find((item) => item.key === 'test:user:2');
 
