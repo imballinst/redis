@@ -1,16 +1,10 @@
 import { beforeAll, expect, test, afterEach, vi, afterAll } from 'vitest';
-import { RedisClientTest } from '../client';
-import { RedisFunctions, RedisModules, RedisScripts } from 'redis';
+import { RedisClientTest } from '../client-test';
 
-let redisClient: RedisClientTest<
-  {
-    hello: (value: number) => Promise<number>;
-    user: (userId: string) => Promise<{ id: string; name: string }>;
-  },
-  RedisModules,
-  RedisFunctions,
-  RedisScripts
->;
+let redisClient: RedisClientTest<{
+  hello: (value: number) => Promise<number>;
+  user: (userId: string) => Promise<{ id: string; name: string }>;
+}>;
 
 beforeAll(async () => {
   function testFetch<T extends unknown>(val: T): Promise<T> {
@@ -406,4 +400,39 @@ test('retrieve cache with dynamic keys: with mget', async () => {
 
   expect(existingPromiseFn).toBeCalledTimes(1);
   expect(cacheHitFn).toBeCalledTimes(6);
+});
+
+test('revalidate keys', async () => {
+  redisClient.setPrefix('test:');
+  redisClient.setProcessors({
+    cacheValueProcessor: {
+      user: (value) => JSON.parse(value)
+    },
+    cacheKeyProcessor: {
+      user: (userId) => userId
+    }
+  });
+
+  // Bypass the client.
+  await redisClient.instance.mSet([
+    ['test:user:1', '{ "isValidUser": true }'],
+    ['test:user:2', 'this is not valid']
+  ]);
+
+  // Revalidate.
+  let validateResult = await redisClient.revalidate();
+  let [firstUser, secondUser] = validateResult;
+
+  expect(firstUser.isValid).toBe(true);
+  expect(secondUser.isValid).toBe(false);
+
+  // After that, we can clean up the thingies, or even maybe "fix" the invalid user.
+  await redisClient.instance.set('test:user:2', '{ "isValidUser": true }');
+
+  // Revalidate, again.
+  validateResult = await redisClient.revalidate();
+  [firstUser, secondUser] = validateResult;
+
+  expect(firstUser.isValid).toBe(true);
+  expect(secondUser.isValid).toBe(true);
 });

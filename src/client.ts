@@ -6,24 +6,14 @@ import {
   RedisScripts
 } from 'redis';
 import { createClient, SetOptions } from 'redis';
-
-interface Events<FetcherRecord extends FetcherRecordExtends> {
-  // For logging purposes only.
-  onCacheHit?: (key: keyof FetcherRecord, value: unknown) => unknown;
-  onExistingPromiseHit?: (key: keyof FetcherRecord, value: unknown) => unknown;
-}
-
-type FetcherRecordExtends = Record<string, (...args: any[]) => any>;
-type UnwrapPromise<T> = T extends Promise<infer R> ? R : T;
-
-type CacheValueProcessor<FetcherRecord extends FetcherRecordExtends> = Partial<{
-  [K in keyof FetcherRecord]: (
-    value: string
-  ) => UnwrapPromise<ReturnType<FetcherRecord[K]>>;
-}>;
-type CacheKeyProcessor<FetcherRecord extends FetcherRecordExtends> = Partial<{
-  [K in keyof FetcherRecord]: (...args: Parameters<FetcherRecord[K]>) => string;
-}>;
+import {
+  FetcherRecordExtends,
+  UnwrapPromise,
+  CacheValueProcessor,
+  CacheKeyProcessor,
+  RevalidateType,
+  Events
+} from './types';
 
 interface KeyParams<
   FetcherRecord extends FetcherRecordExtends,
@@ -41,32 +31,36 @@ type KeyParamsReturnType<
 export class RedisClient<
   FetcherRecord extends FetcherRecordExtends,
   // These are types from Redis, we probably don't care about it.
-  M extends RedisModules,
-  F extends RedisFunctions,
-  S extends RedisScripts
+  M extends RedisModules = RedisModules,
+  F extends RedisFunctions = RedisFunctions,
+  S extends RedisScripts = RedisScripts
 > {
   private fetchersRecord: FetcherRecord;
   private promisesRecord: Partial<Record<string, any>>;
+  protected keyPrefix: string;
   protected cacheValueProcessor: CacheValueProcessor<FetcherRecord>;
   protected cacheKeyProcessor?: CacheKeyProcessor<FetcherRecord>;
-  protected events?: Events<FetcherRecord>;
+  protected events?: Events;
   instance: RedisClientType<M, F, S>;
 
   constructor({
     fetchersRecord,
+    keyPrefix,
     redisClientOptions,
     processors,
     events
   }: {
     fetchersRecord: FetcherRecord;
+    keyPrefix?: string;
     redisClientOptions?: RedisClientOptions<M, F, S>;
     processors?: {
       cacheValueProcessor?: CacheValueProcessor<FetcherRecord>;
       cacheKeyProcessor?: CacheKeyProcessor<FetcherRecord>;
     };
-    events?: Events<FetcherRecord>;
+    events?: Events;
   }) {
     this.fetchersRecord = fetchersRecord;
+    this.keyPrefix = keyPrefix ?? '';
     this.promisesRecord = {};
     this.instance = createClient<M, F, S>(redisClientOptions);
     this.cacheValueProcessor = processors?.cacheValueProcessor ?? {};
@@ -86,6 +80,64 @@ export class RedisClient<
   teardown() {
     this.promisesRecord = {};
     return this.instance.quit();
+  }
+
+  async revalidate() {
+    if (!this.keyPrefix) {
+      throw new Error(
+        'Error: unable to revalidate if no key prefix is given, since there are no boundaries for the retrieved keys.'
+      );
+    }
+
+    const allKeys: string[] = [];
+    let cursor = 0;
+
+    while (true) {
+      const { cursor: nextCursor, keys } = await this.instance.scan(0, {
+        MATCH: `${this.keyPrefix}*`
+      });
+
+      cursor = nextCursor;
+      allKeys.push(...keys);
+
+      if (cursor === 0) {
+        break;
+      }
+    }
+
+    // Revalidate the contents.
+    const values = await this.instance.mGet(allKeys);
+    const fetcherKeys = Object.keys(this.fetchersRecord);
+    const results: Array<RevalidateType> = [];
+
+    for (let i = 0; i < allKeys.length; i++) {
+      const effectiveKey = allKeys[i].slice(this.keyPrefix.length);
+      const firstKeySegment = fetcherKeys.find((key) =>
+        effectiveKey.startsWith(`${key}:`)
+      );
+      if (!firstKeySegment) continue;
+
+      const value = values[i];
+      const result: RevalidateType = {
+        key: effectiveKey,
+        isValid: true,
+        parsedValue: value
+      };
+
+      try {
+        if (value) {
+          // In case it throws, we know.
+          result.parsedValue =
+            await this.cacheValueProcessor[firstKeySegment]?.(value);
+        }
+      } catch (err) {
+        result.isValid = false;
+      }
+
+      results.push(result);
+    }
+
+    return results;
   }
 
   async fetch<K extends keyof FetcherRecord>({
@@ -199,51 +251,6 @@ export class RedisClient<
     this.promisesRecord[effectiveKey] = promise;
 
     return promise;
-  }
-}
-
-export class RedisClientTest<
-  FetcherRecord extends FetcherRecordExtends,
-  // These are types from Redis, we probably don't care about it.
-  M extends RedisModules,
-  F extends RedisFunctions,
-  S extends RedisScripts
-> extends RedisClient<
-  FetcherRecord,
-  // These are types from Redis, we probably don't care about it.
-  M,
-  F,
-  S
-> {
-  setEvents(events: Events<FetcherRecord>) {
-    this.events = events;
-  }
-
-  setProcessors({
-    cacheKeyProcessor,
-    cacheValueProcessor
-  }: {
-    cacheKeyProcessor?: CacheKeyProcessor<FetcherRecord>;
-    cacheValueProcessor?: CacheValueProcessor<FetcherRecord>;
-  }) {
-    if (cacheKeyProcessor) {
-      this.cacheKeyProcessor = cacheKeyProcessor;
-    }
-
-    if (cacheValueProcessor) {
-      this.cacheValueProcessor = cacheValueProcessor;
-    }
-  }
-
-  getCurrentlyCachedKeys() {
-    return this.instance.keys('*');
-  }
-
-  cleanupTestDependencies() {
-    this.events = undefined;
-    this.cacheValueProcessor = {};
-    this.cacheKeyProcessor = undefined;
-    return this.cleanup();
   }
 }
 

@@ -3,6 +3,7 @@
 .devcontainer/
 .yarn/
 examples/
+scripts/
 src/
 
 .gitattributes
