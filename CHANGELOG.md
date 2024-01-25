@@ -1,5 +1,11 @@
 # @imballinstack/redis
 
+## 0.3.0
+
+### Minor Changes
+
+- 45b4414: feat: allow revalidation of keys
+
 ## 0.2.0
 
 ### Minor Changes
