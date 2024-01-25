@@ -6,7 +6,7 @@
     "start": "tsx index.ts"
   },
   "dependencies": {
-    "@imballinstack/redis": "0.1.0",
+    "@imballinstack/redis": "0.3.0",
     "redis": "4.6.12"
   },
   "devDependencies": {

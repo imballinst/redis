@@ -19,7 +19,7 @@ const redisClient = new RedisClient({
     }
   }
 });
-await redisClient.initialize();
+await redisClient.connect();
 await redisClient.cleanup();
 
 let user1 = redisClient.fetch({
