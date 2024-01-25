@@ -422,7 +422,7 @@ test('revalidate keys', async () => {
   // Revalidate.
   let validateResult = await redisClient.revalidate();
   let [firstUser, secondUser] = validateResult;
-
+  console.info(firstUser, secondUser);
   expect(firstUser.isValid).toBe(true);
   expect(secondUser.isValid).toBe(false);
 
