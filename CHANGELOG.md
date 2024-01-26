@@ -1,5 +1,11 @@
 # @imballinstack/redis
 
+## 0.3.3
+
+### Patch Changes
+
+- 82455cb: fix: export anotehr types
+
 ## 0.3.2
 
 ### Patch Changes
