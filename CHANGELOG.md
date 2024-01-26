@@ -1,5 +1,11 @@
 # @imballinstack/redis
 
+## 0.3.2
+
+### Patch Changes
+
+- 44c989d: fix: fix types are not exported
+
 ## 0.3.1
 
 ### Patch Changes
