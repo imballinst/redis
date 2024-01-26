@@ -1,5 +1,11 @@
 # @imballinstack/redis
 
+## 0.3.5
+
+### Patch Changes
+
+- 0db57c3: docs: add jsdocs
+
 ## 0.3.4
 
 ### Patch Changes
