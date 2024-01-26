@@ -437,4 +437,16 @@ test('revalidate keys', async () => {
 
   expect(firstUser?.isValid).toBe(true);
   expect(secondUser?.isValid).toBe(true);
+
+  // We can also revalidate on the fly.
+  await redisClient.instance.set('test:user:1', 'this is not valid');
+  const user = await redisClient.fetch({ key: 'user', params: ['1'] });
+
+  expect(user.id).toBe('1');
+  expect(user.name).toBe('Name for 1');
+
+  // And then, when we get manually, it should properly change to the "revalidated" version.
+  const userFromCache = await redisClient.instance.get('test:user:1');
+
+  expect(userFromCache).toBe(JSON.stringify({ id: '1', name: 'Name for 1' }));
 });

@@ -193,9 +193,11 @@ export class RedisClient<
     fnParams: Parameters<FetcherRecord[typeof key]>
   ) {
     const keyProcessor = this.cacheKeyProcessor?.[key];
-    return (
-      keyProcessor ? `${String(key)}:${keyProcessor(...fnParams)}` : key
-    ) as string;
+    const processedKey = keyProcessor
+      ? `${String(key)}:${keyProcessor(...fnParams)}`
+      : key;
+
+    return `${this.keyPrefix}${processedKey as string}`;
   }
 
   private internalCacheValueProcessor({
@@ -214,7 +216,14 @@ export class RedisClient<
       }
 
       const valueProcessor = this.cacheValueProcessor?.[key];
-      return valueProcessor ? valueProcessor(cached) : (cached as any);
+
+      try {
+        // If `valueProcessor` throws something here, then there's an error and it means
+        // we have to re-fetch the thing.
+        return valueProcessor ? valueProcessor(cached) : (cached as any);
+      } catch (err) {
+        // No-op.
+      }
     }
 
     const existingPromise = this.promisesRecord[effectiveKey];
