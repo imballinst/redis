@@ -19,7 +19,7 @@ interface KeyParams<
   FetcherRecord extends FetcherRecordExtends,
   K extends keyof FetcherRecord
 > {
-  key: K;
+  key: Exclude<K, symbol>;
   params: Parameters<FetcherRecord[K]>;
 }
 type KeyParamsReturnType<
