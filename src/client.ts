@@ -28,6 +28,22 @@ type KeyParamsReturnType<
   K extends keyof FetcherRecord
 > = Array<UnwrapPromise<ReturnType<FetcherRecord[KP[number]['key']]>>>;
 
+export interface RedisClientConstructorOptions<
+  FetcherRecord extends FetcherRecordExtends,
+  M extends RedisModules = RedisModules,
+  F extends RedisFunctions = RedisFunctions,
+  S extends RedisScripts = RedisScripts
+> {
+  fetchersRecord: FetcherRecord;
+  keyPrefix?: string;
+  redisClientOptions?: RedisClientOptions<M, F, S>;
+  processors?: {
+    cacheValueProcessor?: CacheValueProcessor<FetcherRecord>;
+    cacheKeyProcessor?: CacheKeyProcessor<FetcherRecord>;
+  };
+  events?: Events;
+}
+
 export class RedisClient<
   FetcherRecord extends FetcherRecordExtends,
   // These are types from Redis, we probably don't care about it.
@@ -49,16 +65,7 @@ export class RedisClient<
     redisClientOptions,
     processors,
     events
-  }: {
-    fetchersRecord: FetcherRecord;
-    keyPrefix?: string;
-    redisClientOptions?: RedisClientOptions<M, F, S>;
-    processors?: {
-      cacheValueProcessor?: CacheValueProcessor<FetcherRecord>;
-      cacheKeyProcessor?: CacheKeyProcessor<FetcherRecord>;
-    };
-    events?: Events;
-  }) {
+  }: RedisClientConstructorOptions<FetcherRecord, M, F, S>) {
     this.fetchersRecord = fetchersRecord;
     this.keyPrefix = keyPrefix ?? '';
     this.promisesRecord = {};
