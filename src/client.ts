@@ -28,22 +28,77 @@ type KeyParamsReturnType<
   K extends keyof FetcherRecord
 > = Array<UnwrapPromise<ReturnType<FetcherRecord[KP[number]['key']]>>>;
 
+/**
+ * The interface of the constructor. You might want to use this interface if you are wrapping the client
+ * with your own implementation.
+ */
 export interface RedisClientConstructorOptions<
   FetcherRecord extends FetcherRecordExtends,
   M extends RedisModules = RedisModules,
   F extends RedisFunctions = RedisFunctions,
   S extends RedisScripts = RedisScripts
 > {
+  /**
+   * A record containing key/function map. The key and function that you set up here can be used inside the `processors` field.
+   */
   fetchersRecord: FetcherRecord;
+  /**
+   * The key prefix for the keys set using the instance. Usually useful to have some kind of "namespacing". This field is also required
+   * to be set if you want to use `revalidate` method of the class.
+   */
   keyPrefix?: string;
+  /**
+   * The options passed to `node-redis` instance.
+   */
   redisClientOptions?: RedisClientOptions<M, F, S>;
+  /**
+   * The processors for each of the keys set in `fetchersRecord`.
+   */
   processors?: {
-    cacheValueProcessor?: CacheValueProcessor<FetcherRecord>;
+    /**
+     * A record containing key/function map. The function uses the parameters of the function defined in `fetchersRecord`.
+     * The function's return value will be appended to the key in the Redis cache. For example:
+     *
+     * ```ts
+     * {
+     *   team: (teamId) => teamId
+     * }
+     * ```
+     *
+     * This will result in `team:{teamId}` key in Redis cache; or `{keyPrefix}:team:${teamId}` if you also provide `keyPrefix`.
+     */
     cacheKeyProcessor?: CacheKeyProcessor<FetcherRecord>;
+    /**
+     * A record containing key/function map. The function is used to "parse" the value from Redis cache. Since Redis can only store
+     * strings, then when we retrieve it from cache, we need to somehow parse it back.
+     *
+     * ```ts
+     * {
+     *   team: (value) => JSON.parse(value)
+     * }
+     * ```
+     *
+     * If you are using something like [zod](https://github.com/colinhacks/zod), you can use the `parse` method from a schema,
+     * so that if the schema doesn't match, it will throw an error and hence it will re-fetch from the source again.
+     *
+     * ```ts
+     * {
+     *   team: (value) => Team.parse(JSON.parse(value))
+     * }
+     * ```
+     */
+    cacheValueProcessor?: CacheValueProcessor<FetcherRecord>;
   };
+  /**
+   * List of events that you can use to track things that are happening inside the instance.
+   */
   events?: Events;
 }
 
+/**
+ * RedisClient is the main exported class from `@imballinstack/redis`. With this class, you can create
+ * a record containing fetchers and the keys will be used for fetch later and increase type-safety.
+ */
 export class RedisClient<
   FetcherRecord extends FetcherRecordExtends,
   // These are types from Redis, we probably don't care about it.
@@ -75,20 +130,39 @@ export class RedisClient<
     this.events = events;
   }
 
+  /**
+   * This function is just a wrapper of `connect` function from `node-redis` instance.
+   */
   connect(): Promise<RedisClientType<M, F, S>> {
     return this.instance.connect();
   }
 
+  /**
+   * This function is a wrapper of the `flushDb` function from `node-redis` instance.
+   * On top of that, it also clears the internal `promisesRecord`, which is used to track
+   * fetches that result in the same keys; so that we don't need multiple fetches of the same result.
+   */
   cleanup() {
     this.promisesRecord = {};
     return this.instance.flushDb();
   }
 
+  /**
+   * This function is a wrapper of the `quit` function from `node-redis` instance.
+   * On top of that, it also clears the internal `promisesRecord`, which is used to track
+   * fetches that result in the same keys; so that we don't need multiple fetches of the same result.
+   */
   teardown() {
     this.promisesRecord = {};
     return this.instance.quit();
   }
 
+  /**
+   * This function revalidates all keys registered inside `fetcherRecord`. If during the process of processing the cached value,
+   * there is a thrown error (e.g. validation error), then the instance will do a re-fetch.
+   *
+   * @throws Error if `keyPrefix` is not passed when the class is instantiated.
+   */
   async revalidate() {
     if (!this.keyPrefix) {
       throw new Error(
