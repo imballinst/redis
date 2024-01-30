@@ -1,5 +1,11 @@
 # @imballinstack/redis
 
+## 0.4.0
+
+### Minor Changes
+
+- d02c9dc: feat: implement mock client
+
 ## 0.3.5
 
 ### Patch Changes
