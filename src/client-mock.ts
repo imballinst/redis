@@ -21,8 +21,11 @@ export class MockRedisClient<
     keyPrefix,
     redisClientOptions,
     processors,
-    events
-  }: RedisClientConstructorOptions<FetcherRecord, M, F, S>) {
+    events,
+    pathToRedisMockFile
+  }: RedisClientConstructorOptions<FetcherRecord, M, F, S> & {
+    pathToRedisMockFile?: string;
+  }) {
     super({
       fetchersRecord,
       keyPrefix,
@@ -31,11 +34,9 @@ export class MockRedisClient<
       events
     });
 
-    this.instance = new MockRedisInstance() as unknown as RedisClientType<
-      M,
-      F,
-      S
-    >;
+    this.instance = new MockRedisInstance(
+      pathToRedisMockFile
+    ) as unknown as RedisClientType<M, F, S>;
   }
 }
 
@@ -43,7 +44,12 @@ export class MockRedisClient<
 class MockRedisInstance {
   private inMemoryRedis: Record<string, string> = {};
   private timeout: any = null;
-  private pathToRedisMock = path.join(process.cwd(), '.redis-mock');
+  private pathToRedisMock: string;
+
+  constructor(pathToRedisMockFile?: string) {
+    this.pathToRedisMock =
+      pathToRedisMockFile ?? path.join(process.cwd(), '.redis-mock');
+  }
 
   async connect() {
     try {
