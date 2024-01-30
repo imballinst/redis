@@ -6,6 +6,7 @@ import {
   CacheValueProcessor,
   Events
 } from './types';
+import { MockRedisClient } from './client-mock';
 
 export class RedisClientTest<
   FetcherRecord extends FetcherRecordExtends,
@@ -14,6 +15,56 @@ export class RedisClientTest<
   F extends RedisFunctions = RedisFunctions,
   S extends RedisScripts = RedisScripts
 > extends RedisClient<
+  FetcherRecord,
+  // These are types from Redis, we probably don't care about it.
+  M,
+  F,
+  S
+> {
+  setPrefix(prefix: string) {
+    this.keyPrefix = prefix;
+  }
+
+  setEvents(events: Events) {
+    this.events = events;
+  }
+
+  setProcessors({
+    cacheKeyProcessor,
+    cacheValueProcessor
+  }: {
+    cacheKeyProcessor?: CacheKeyProcessor<FetcherRecord>;
+    cacheValueProcessor?: CacheValueProcessor<FetcherRecord>;
+  }) {
+    if (cacheKeyProcessor) {
+      this.cacheKeyProcessor = cacheKeyProcessor;
+    }
+
+    if (cacheValueProcessor) {
+      this.cacheValueProcessor = cacheValueProcessor;
+    }
+  }
+
+  getCurrentlyCachedKeys() {
+    return this.instance.keys('*');
+  }
+
+  cleanupTestDependencies() {
+    this.keyPrefix = '';
+    this.events = undefined;
+    this.cacheValueProcessor = {};
+    this.cacheKeyProcessor = undefined;
+    return this.cleanup();
+  }
+}
+
+export class MockRedisClientTest<
+  FetcherRecord extends FetcherRecordExtends,
+  // These are types from Redis, we probably don't care about it.
+  M extends RedisModules = RedisModules,
+  F extends RedisFunctions = RedisFunctions,
+  S extends RedisScripts = RedisScripts
+> extends MockRedisClient<
   FetcherRecord,
   // These are types from Redis, we probably don't care about it.
   M,

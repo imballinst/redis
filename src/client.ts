@@ -8,25 +8,13 @@ import {
 import { createClient, SetOptions } from 'redis';
 import {
   FetcherRecordExtends,
-  UnwrapPromise,
   CacheValueProcessor,
   CacheKeyProcessor,
   RevalidateType,
   Events
 } from './types';
-
-interface KeyParams<
-  FetcherRecord extends FetcherRecordExtends,
-  K extends keyof FetcherRecord
-> {
-  key: Exclude<K, symbol>;
-  params: Parameters<FetcherRecord[K]>;
-}
-type KeyParamsReturnType<
-  KP extends Array<KeyParams<FetcherRecord, K>>,
-  FetcherRecord extends FetcherRecordExtends,
-  K extends keyof FetcherRecord
-> = Array<UnwrapPromise<ReturnType<FetcherRecord[KP[number]['key']]>>>;
+import { KeyParams, RedisClientInterface } from './interface';
+import { createDefaultCacheValueProcessor } from './helpers';
 
 /**
  * The interface of the constructor. You might want to use this interface if you are wrapping the client
@@ -105,9 +93,10 @@ export class RedisClient<
   M extends RedisModules = RedisModules,
   F extends RedisFunctions = RedisFunctions,
   S extends RedisScripts = RedisScripts
-> {
-  private fetchersRecord: FetcherRecord;
-  private promisesRecord: Partial<Record<string, any>>;
+> implements RedisClientInterface<FetcherRecord, M, F, S>
+{
+  protected fetchersRecord: FetcherRecord;
+  protected promisesRecord: Partial<Record<string, any>>;
   protected keyPrefix: string;
   protected cacheValueProcessor: CacheValueProcessor<FetcherRecord>;
   protected cacheKeyProcessor?: CacheKeyProcessor<FetcherRecord>;
@@ -130,39 +119,20 @@ export class RedisClient<
     this.events = events;
   }
 
-  /**
-   * This function is just a wrapper of `connect` function from `node-redis` instance.
-   */
-  connect(): Promise<RedisClientType<M, F, S>> {
-    return this.instance.connect();
+  async connect() {
+    await this.instance.connect();
   }
 
-  /**
-   * This function is a wrapper of the `flushDb` function from `node-redis` instance.
-   * On top of that, it also clears the internal `promisesRecord`, which is used to track
-   * fetches that result in the same keys; so that we don't need multiple fetches of the same result.
-   */
-  cleanup() {
+  async cleanup() {
     this.promisesRecord = {};
-    return this.instance.flushDb();
+    await this.instance.flushDb();
   }
 
-  /**
-   * This function is a wrapper of the `quit` function from `node-redis` instance.
-   * On top of that, it also clears the internal `promisesRecord`, which is used to track
-   * fetches that result in the same keys; so that we don't need multiple fetches of the same result.
-   */
-  teardown() {
+  async teardown() {
     this.promisesRecord = {};
-    return this.instance.quit();
+    await this.instance.quit();
   }
 
-  /**
-   * This function revalidates all keys registered inside `fetcherRecord`. If during the process of processing the cached value,
-   * there is a thrown error (e.g. validation error), then the instance will do a re-fetch.
-   *
-   * @throws Error if `keyPrefix` is not passed when the class is instantiated.
-   */
   async revalidate() {
     if (!this.keyPrefix) {
       throw new Error(
@@ -228,7 +198,7 @@ export class RedisClient<
     setOptions
   }: KeyParams<FetcherRecord, K> & {
     setOptions?: SetOptions;
-  }): Promise<UnwrapPromise<ReturnType<FetcherRecord[typeof key]>>> {
+  }) {
     const effectiveKey = this.getEffectiveKey(key, params);
 
     const cached = await this.instance.get(effectiveKey);
@@ -247,7 +217,7 @@ export class RedisClient<
   }: {
     keyParamsArray: Array<KeyParams<FetcherRecord, K>>;
     setOptions?: SetOptions;
-  }): Promise<KeyParamsReturnType<typeof keyParamsArray, FetcherRecord, K>> {
+  }) {
     const keys = keyParamsArray.map((item) => item.key);
     const effectiveKeys = keys.map((key, idx) =>
       this.getEffectiveKey(key, keyParamsArray[idx].params)
@@ -287,7 +257,7 @@ export class RedisClient<
     setOptions,
     cached,
     effectiveKey
-  }: Parameters<this['fetch']>[0] & {
+  }: Parameters<RedisClientInterface<FetcherRecord, M, F, S>['fetch']>[0] & {
     cached: string | null;
     effectiveKey: string;
   }) {
@@ -342,33 +312,5 @@ export class RedisClient<
     this.promisesRecord[effectiveKey] = promise;
 
     return promise;
-  }
-}
-
-// Helper functions.
-function createDefaultCacheValueProcessor(
-  key: string | number | symbol,
-  value: unknown
-) {
-  const type = typeof value;
-
-  switch (type) {
-    case 'number': {
-      return (val: unknown) => Number(val);
-    }
-    case 'string': {
-      return (val: unknown) => String(val);
-    }
-    case 'undefined':
-    case 'object': {
-      if (value === 'null') return () => null;
-      if (value === 'undefined') return () => undefined;
-      return (val: string) => JSON.parse(val);
-    }
-    default: {
-      throw new Error(
-        `Cannot handle value of type ${type}. Please pass a custom cacheValueProcessor for key \`${String(key)}\`.`
-      );
-    }
   }
 }
