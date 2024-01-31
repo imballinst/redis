@@ -19,7 +19,6 @@ export class MockRedisClient<
   constructor({
     fetchersRecord,
     keyPrefix,
-    redisClientOptions,
     processors,
     events,
     pathToRedisMockFile
@@ -29,7 +28,9 @@ export class MockRedisClient<
     super({
       fetchersRecord,
       keyPrefix,
-      redisClientOptions,
+      // Intentionally set this to empty object so we don't let Redis parse this options.
+      // We're not going to use it, anyway.
+      redisClientOptions: {},
       processors,
       events
     });
