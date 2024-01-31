@@ -1,5 +1,15 @@
 # @imballinstack/redis
 
+## 0.5.0
+
+### Minor Changes
+
+- 14a90ae: BREAKING: some breaking API changes
+
+  1. `fetchersRecord` is now `fetcherRecord`
+  2. `processors` values now contain without `Processor` suffix
+  3. Add new field, `processors.cacheExpiration`, a `Record<string, number>`. It will be used to set the expiration timers (in ms) for each key. This is so that we only need to define that once.
+
 ## 0.4.3
 
 ### Patch Changes
