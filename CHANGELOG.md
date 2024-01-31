@@ -1,5 +1,11 @@
 # @imballinstack/redis
 
+## 0.4.1
+
+### Patch Changes
+
+- 8b833be: chore: add on and off event to the mock redis client
+
 ## 0.4.0
 
 ### Minor Changes
