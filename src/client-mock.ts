@@ -91,6 +91,14 @@ class MockRedisInstance {
     };
   }
 
+  on(eventName: string, cb: (...args: any[]) => unknown) {
+    // No-op.
+  }
+
+  off(eventName: string, cb: (...args: any[]) => unknown) {
+    // No-op.
+  }
+
   async mGet(keys: string[]) {
     return keys.map((key) => this.inMemoryRedis[key]);
   }
