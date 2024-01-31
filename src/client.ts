@@ -186,6 +186,10 @@ export class RedisClient<
       }
     }
 
+    if (allKeys.length === 0) {
+      return [];
+    }
+
     // Revalidate the contents.
     const values = await this.instance.mGet(allKeys);
     const fetcherKeys = Object.keys(this.fetchersRecord);
