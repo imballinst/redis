@@ -1,5 +1,11 @@
 # @imballinstack/redis
 
+## 0.4.2
+
+### Patch Changes
+
+- de9f742: fix: fix revalidate fails if there are no keys
+
 ## 0.4.1
 
 ### Patch Changes
