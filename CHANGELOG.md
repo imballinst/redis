@@ -1,5 +1,11 @@
 # @imballinstack/redis
 
+## 0.4.3
+
+### Patch Changes
+
+- a80e4ad: fix: fix invalid URL showing up despite that we are using mock redis client
+
 ## 0.4.2
 
 ### Patch Changes
