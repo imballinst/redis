@@ -9,7 +9,7 @@ function testFetch<T extends unknown>(val: T): Promise<T> {
 }
 
 const redisClient = new RedisClient({
-  fetchersRecord: {
+  fetcherRecord: {
     user: (userId: string) =>
       testFetch({ id: userId, name: `Name for ${userId}` })
   },

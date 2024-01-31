@@ -19,6 +19,11 @@ export type CacheKeyProcessor<FetcherRecord extends FetcherRecordExtends> =
       ...args: Parameters<FetcherRecord[K]>
     ) => string;
   }>;
+export type CacheExpirationProcessor<
+  FetcherRecord extends FetcherRecordExtends
+> = Partial<{
+  [K in keyof FetcherRecord]: number;
+}>;
 
 export interface Events {
   /** This is for logging and testing purposes only. */

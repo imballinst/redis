@@ -18,7 +18,7 @@ function testFetch<T extends unknown>(val: T): Promise<T> {
 }
 
 const options = {
-  fetchersRecord: {
+  fetcherRecord: {
     hello: (value: number) => testFetch(value),
     user: (userId: string) =>
       testFetch({ id: userId, name: `Name for ${userId}` })

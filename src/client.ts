@@ -12,7 +12,8 @@ import {
   CacheValueProcessor,
   CacheKeyProcessor,
   RevalidateType,
-  Events
+  Events,
+  CacheExpirationProcessor
 } from './types';
 
 interface KeyParams<
@@ -41,7 +42,7 @@ export interface RedisClientConstructorOptions<
   /**
    * A record containing key/function map. The key and function that you set up here can be used inside the `processors` field.
    */
-  fetchersRecord: FetcherRecord;
+  fetcherRecord: FetcherRecord;
   /**
    * The key prefix for the keys set using the instance. Usually useful to have some kind of "namespacing". This field is also required
    * to be set if you want to use `revalidate` method of the class.
@@ -52,11 +53,11 @@ export interface RedisClientConstructorOptions<
    */
   redisClientOptions?: RedisClientOptions<M, F, S>;
   /**
-   * The processors for each of the keys set in `fetchersRecord`.
+   * The processors for each of the keys set in `fetcherRecord`.
    */
   processors?: {
     /**
-     * A record containing key/function map. The function uses the parameters of the function defined in `fetchersRecord`.
+     * A record containing key/function map. The function uses the parameters of the function defined in `fetcherRecord`.
      * The function's return value will be appended to the key in the Redis cache. For example:
      *
      * ```ts
@@ -67,7 +68,7 @@ export interface RedisClientConstructorOptions<
      *
      * This will result in `team:{teamId}` key in Redis cache; or `{keyPrefix}:team:${teamId}` if you also provide `keyPrefix`.
      */
-    cacheKeyProcessor?: CacheKeyProcessor<FetcherRecord>;
+    cacheKey?: CacheKeyProcessor<FetcherRecord>;
     /**
      * A record containing key/function map. The function is used to "parse" the value from Redis cache. Since Redis can only store
      * strings, then when we retrieve it from cache, we need to somehow parse it back.
@@ -87,7 +88,8 @@ export interface RedisClientConstructorOptions<
      * }
      * ```
      */
-    cacheValueProcessor?: CacheValueProcessor<FetcherRecord>;
+    cacheValue?: CacheValueProcessor<FetcherRecord>;
+    cacheExpiration?: CacheExpirationProcessor<FetcherRecord>;
   };
   /**
    * List of events that you can use to track things that are happening inside the instance.
@@ -97,7 +99,7 @@ export interface RedisClientConstructorOptions<
 
 /**
  * RedisClient is the main exported class from `@imballinstack/redis`. With this class, you can create
- * a record containing fetchers and the keys will be used for fetch later and increase type-safety.
+ * a record containing fetcher and the keys will be used for fetch later and increase type-safety.
  */
 export class RedisClient<
   FetcherRecord extends FetcherRecordExtends,
@@ -106,27 +108,29 @@ export class RedisClient<
   F extends RedisFunctions = RedisFunctions,
   S extends RedisScripts = RedisScripts
 > {
-  private fetchersRecord: FetcherRecord;
+  private fetcherRecord: FetcherRecord;
   private promisesRecord: Partial<Record<string, any>>;
   protected keyPrefix: string;
   protected cacheValueProcessor: CacheValueProcessor<FetcherRecord>;
   protected cacheKeyProcessor?: CacheKeyProcessor<FetcherRecord>;
+  protected cacheExpirationProcessor?: CacheExpirationProcessor<FetcherRecord>;
   protected events?: Events;
   instance: RedisClientType<M, F, S>;
 
   constructor({
-    fetchersRecord,
+    fetcherRecord,
     keyPrefix,
     redisClientOptions,
     processors,
     events
   }: RedisClientConstructorOptions<FetcherRecord, M, F, S>) {
-    this.fetchersRecord = fetchersRecord;
+    this.fetcherRecord = fetcherRecord;
     this.keyPrefix = keyPrefix ?? '';
     this.promisesRecord = {};
     this.instance = createClient<M, F, S>(redisClientOptions);
-    this.cacheValueProcessor = processors?.cacheValueProcessor ?? {};
-    this.cacheKeyProcessor = processors?.cacheKeyProcessor;
+    this.cacheValueProcessor = processors?.cacheValue ?? {};
+    this.cacheKeyProcessor = processors?.cacheKey;
+    this.cacheExpirationProcessor = processors?.cacheExpiration;
     this.events = events;
   }
 
@@ -192,7 +196,7 @@ export class RedisClient<
 
     // Revalidate the contents.
     const values = await this.instance.mGet(allKeys);
-    const fetcherKeys = Object.keys(this.fetchersRecord);
+    const fetcherKeys = Object.keys(this.fetcherRecord);
     const results: Array<RevalidateType> = [];
 
     for (let i = 0; i < allKeys.length; i++) {
@@ -259,15 +263,25 @@ export class RedisClient<
 
     const values = await this.instance.mGet(effectiveKeys);
     const results = await Promise.all(
-      values.map((value, idx) =>
-        this.internalCacheValueProcessor({
+      values.map((value, idx) => {
+        const key = keys[idx];
+        let effectiveSetOptions = setOptions;
+
+        if (!effectiveSetOptions) {
+          const expireIn = this.cacheExpirationProcessor?.[key];
+          if (expireIn) {
+            effectiveSetOptions = { EX: expireIn };
+          }
+        }
+
+        return this.internalCacheValueProcessor({
           cached: value,
           effectiveKey: effectiveKeys[idx],
-          key: keys[idx],
+          key,
           params: keyParamsArray[idx].params,
-          setOptions
-        })
-      )
+          setOptions: effectiveSetOptions
+        });
+      })
     );
 
     return results;
@@ -320,7 +334,7 @@ export class RedisClient<
       return existingPromise;
     }
 
-    const promise = this.fetchersRecord[key](...params)
+    const promise = this.fetcherRecord[key](...params)
       .then((res: any) => {
         delete this.promisesRecord[effectiveKey];
         this.instance.set(
